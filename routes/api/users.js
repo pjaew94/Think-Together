@@ -116,4 +116,28 @@ router.post("/saveArticle", auth, async (req, res) => {
   }
 });
 
+// Delete saved article only by user
+router.delete("/deleteArticle/:article_id", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+    const article = user.savedArticles.find(
+      (article) => article.id === req.params.article_id
+    );
+    if (!article)
+      return res.status(404).json({ msg: "Article does not exist" });
+    if (article.user.toString() === req.user.id) {
+      user.savedArticles = user.savedArticles.filter(
+        ({ id }) => id !== req.params.article_id
+      );
+      await user.save();
+      return res.json(user.savedArticles);
+    } else {
+      return res.status(401).json({ msg: "User not authorized" });
+    }
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
+
 module.exports = router;
