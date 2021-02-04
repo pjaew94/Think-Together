@@ -1,11 +1,14 @@
 const express = require("express");
 const router = express.Router();
+const auth = require("../../middleware/auth");
 const { body, validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const config = require("config");
+
 const User = require("../../models/User");
 
+// Register new user
 router.post(
   "/",
   [
@@ -68,5 +71,49 @@ router.post(
     }
   }
 );
+
+// Save article for user
+router.post("/saveArticle", auth, async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const user = await User.findById(req.user.id).select("-password");
+
+    const {
+      sourceName,
+      author,
+      title,
+      description,
+      url,
+      urlToImage,
+      publishedAt,
+      content,
+    } = req.body;
+
+    const newArticle = {
+      user: req.user.id,
+      sourceName,
+      author,
+      title,
+      description,
+      url,
+      urlToImage,
+      publishedAt,
+      content,
+    };
+
+    user.savedArticles.unshift(newArticle);
+
+    await user.save();
+
+    res.json(user.savedArticles);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+});
 
 module.exports = router;
