@@ -140,4 +140,23 @@ router.delete("/deleteArticle/:article_id", auth, async (req, res) => {
   }
 });
 
+
+// Change user article preferences
+router.put('/preferences', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    const { language, country, category } = req.body;
+
+    user.category = category;
+    user.language = language;
+    user.country = country;
+
+    await user.save();
+    return res.json(user)
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server Error");
+  }
+})
+
 module.exports = router;
